@@ -9,8 +9,8 @@
 #include <math.h>
 #include <MLX42/MLX42.h>
 
-#define WIDTH 1000
-#define HEIGHT 1000
+#define WIDTH 1080
+#define HEIGHT 1080
 
 static mlx_image_t* image;
 
@@ -55,28 +55,41 @@ void ft_hook(void* param)
 
 	if (mlx_is_key_down(mlx, MLX_KEY_ESCAPE))
 		mlx_close_window(mlx);
-	// if (mlx_is_key_down(mlx, MLX_KEY_UP))
-	// 	image->instances[0].y -= 5;
-	// if (mlx_is_key_down(mlx, MLX_KEY_DOWN))
-	// 	image->instances[0].y += 5;
-	// if (mlx_is_key_down(mlx, MLX_KEY_LEFT))
-	// 	image->instances[0].x -= 5;
-	// if (mlx_is_key_down(mlx, MLX_KEY_RIGHT))
-	// 	image->instances[0].x += 5;
+}
+void color_it (int	iter, int i, int j)
+{
+	if (iter < 3)
+		mlx_put_pixel(image, i, j, ft_pixel(38, 115, 157, 200));
+	else if (iter < 5)
+		mlx_put_pixel(image, i, j, ft_pixel(252, 98, 111, 200));
+	else if (iter < 10)
+		mlx_put_pixel(image, i, j, ft_pixel(255, 210, 73, 200));
+	else
+		mlx_put_pixel(image, i, j, ft_pixel(36, 17, 12, 200));
 }
 
-double is_it_mandelbrot (complex Z)
+int is_it_mandelbrot (double x0, double y0, int i, int j)
 {
-	// double	temp;
-	double	magnitude;
+	double	temp;
+	int		max_iter;
+	int		iter;
+	complex Z;
 	
-	// temp = Z.real;
-	// Z.real = Z.real * Z.real - Z.imag * Z.imag  + x0;
-	// Z.imag = 2 * temp * Z.imag + y0;
-	magnitude = Z.real * Z.real + Z.imag * Z.imag;
-	// printf("%f %f\n", Z.real, Z.imag);
-	if (fabs(magnitude) < 4) //check if it's part of the set
+	Z.real = 0;
+	Z.imag = 0;
+	iter = 0;
+	max_iter = 1000;
+	while ((Z.real * Z.real) + (Z.imag * Z.imag) <= 2 * 2 && iter < max_iter)
+	{
+		temp = Z.real * Z.real - Z.imag * Z.imag  + x0;
+		Z.imag = 2 * Z.real * Z.imag + y0;
+		Z.real = temp;
+		iter++;
+	}
+	if (iter == max_iter)
 		return (1);
+	else
+		color_it(iter, i, j);
 	return (0);
 }
 
@@ -84,33 +97,22 @@ void	ft_fillimage(void)
 {
 	double	x0; 
 	double	y0;
-	int		iter;
 	int		result;
 	int		i;
 	int		j;
-	double temp;
-	complex	Z = {0, 0};
 	// double	scale_factor = zoom();
 
-	iter = 0;
 	i = 0;
-	while (i < WIDTH && iter < 1000)
+	while (i < 1080)
 	{
 		j = 0;
-		while (j < HEIGHT && iter < 1000)		
+		while (j < 1080)		
 		{
-			x0 = (double)i / (double)WIDTH * 4.0 - 2.0;
-			y0 = (double)j / (double)HEIGHT * 4.0 - 2.0;
-			temp = Z.real;
-			Z.real = Z.real * Z.real - Z.imag * Z.imag  + x0;
-			Z.imag = 2 * temp * Z.imag + y0;
-			printf("%f %f\n", Z.real, Z.imag);
-			result = is_it_mandelbrot(Z);
+			x0 = (double)i / 1080.0 * 4.0 - 2.0;
+			y0 = (double)j / 1080.0 * 4.0 - 2.0;
+			result = is_it_mandelbrot(x0, y0, i, j);
 			if (result == 1)
-				mlx_put_pixel(image, i, j, ft_pixel(170, 46, 37, 255));
-			else
-				mlx_put_pixel(image, i, j, 0);
-			iter++;
+				mlx_put_pixel(image, i, j, ft_pixel(254, 175, 160, 200));
 			j++;
 		}
 		i++;
