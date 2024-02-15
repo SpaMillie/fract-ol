@@ -94,23 +94,20 @@ int is_it_mandelbrot (double x0, double y0, int i, int j)
 	return (0);
 }
 
-int	is_it_julia (double cx, double cy, int i, int j, complex c)
+int	is_it_julia (double Z_real, double Z_imag, int i, int j, complex c)
 {
 	double	temp;
 	int		max_iter;
 	int		iter;
-	double	R;
-	complex	Z;
 	// unused parameter C
 	
 	iter = 0;
 	max_iter = 1000;
-	R = sqrt(cx * cx + cy * cy);
-	while ((Z.real * Z.real) + (Z.imag * Z.imag) <= R * R && iter < max_iter)
+	while ((Z_real * Z_real) + (Z_imag * Z_imag) <= 4 && iter < max_iter)
 	{
-		temp = Z.real * Z.real - Z.imag * Z.imag;
-		Z.imag = 2 * Z.real * Z.imag + cy;
-		Z.real = temp + cx;
+		temp = Z_real * Z_real - Z_imag * Z_imag;
+		Z_imag = 2 * Z_real * Z_imag + c.imag;
+		Z_real = temp + c.real;
 		iter++;
 	}
 	if (iter == max_iter)
