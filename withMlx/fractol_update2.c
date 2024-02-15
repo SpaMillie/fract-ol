@@ -101,6 +101,7 @@ int	is_it_julia (double cx, double cy, int i, int j, complex c)
 	int		iter;
 	double	R;
 	complex	Z;
+	// unused parameter C
 	
 	iter = 0;
 	max_iter = 1000;
@@ -301,6 +302,8 @@ int	ft_strncmp(const char *s1, const char *s2, size_t n)
 		return (-str2[i]);
 	return (0);
 }
+
+int	some_error(void);
 
 int	create_window(char set, char *str1, char *str2)
 {
