@@ -57,7 +57,7 @@ void ft_hook(void* param)
 	if (mlx_is_key_down(mlx, MLX_KEY_ESCAPE))
 		mlx_close_window(mlx);
 }
-void color_it (int	iter, int i, int j)
+void color_it_outside (int	iter, int i, int j)
 {
 	if (iter < 3)
 		mlx_put_pixel(image, i, j, ft_pixel(38, 115, 157, 200));
@@ -67,6 +67,23 @@ void color_it (int	iter, int i, int j)
 		mlx_put_pixel(image, i, j, ft_pixel(255, 210, 73, 200));
 	else
 		mlx_put_pixel(image, i, j, ft_pixel(36, 17, 12, 200));
+}
+
+void color_it_inside (double iter, int i, int j)
+{
+	// printf("%f\n", iter);
+	if (iter < 10)
+		mlx_put_pixel(image, i, j, ft_pixel(252, 174, 124, 150));
+	else if (iter < 100)
+		mlx_put_pixel(image, i, j, ft_pixel(255, 230, 153, 150));
+	else if (iter < 399)
+		mlx_put_pixel(image, i, j, ft_pixel(249, 255, 181, 150));
+	else if (iter < 700)
+		mlx_put_pixel(image, i, j, ft_pixel(179, 245, 188, 150));
+	else if (iter < 900)
+		mlx_put_pixel(image, i, j, ft_pixel(214, 246, 255, 150));
+	else
+		mlx_put_pixel(image, i, j, ft_pixel(226, 203, 247, 150));
 }
 
 int is_it_mandelbrot (double x0, double y0, int i, int j)
@@ -90,19 +107,20 @@ int is_it_mandelbrot (double x0, double y0, int i, int j)
 	if (iter == max_iter)
 		return (1);
 	else
-		color_it(iter, i, j);
+		color_it_outside(iter, i, j);
 	return (0);
 }
 
-int	is_it_julia (double Z_real, double Z_imag, int i, int j, complex c)
+double	is_it_julia (double Z_real, double Z_imag, int i, int j, complex c)
 {
 	double	temp;
 	int		max_iter;
 	int		iter;
+	double	magnitude;
 	// unused parameter C
 	
 	iter = 0;
-	max_iter = 1001;
+	max_iter = 1000;
 	while ((Z_real * Z_real) + (Z_imag * Z_imag) <= 4 && iter < max_iter)
 	{
 		temp = Z_real * Z_real - Z_imag * Z_imag;
@@ -110,16 +128,17 @@ int	is_it_julia (double Z_real, double Z_imag, int i, int j, complex c)
 		Z_real = temp + c.real;
 		iter++;
 	}
+	magnitude = (Z_real * Z_real) + (Z_imag * Z_imag);
 	if (iter == max_iter)
-		return (iter);
+		return (iter + 1 - (log(magnitude)));
 	else
-		color_it(iter, i, j);
+		color_it_inside(iter, i, j);
 	return (0);
 }
 
 void	julia(complex C, double x0, double y0)
 {
-	int		result;
+	double		result;
 	int		i;
 	int		j;
 
@@ -133,7 +152,7 @@ void	julia(complex C, double x0, double y0)
 			y0 = (double)j / 1080.0 * 4.0 - 2.0;
 			result = is_it_julia(x0, -y0, i, j, C);
 			if (result != 0)
-				color_it(result, i, j);
+				color_it_inside(result, i, j);
 			j++;
 		}
 		i++;
