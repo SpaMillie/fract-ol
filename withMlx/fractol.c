@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <math.h>
+#include <unistd.h>
 #include <MLX42/MLX42.h>
 
 #define WIDTH 1080
@@ -93,35 +94,31 @@ int is_it_mandelbrot (double x0, double y0, int i, int j)
 	return (0);
 }
 
-int	is_it_julia (double cx, double cy, int i, int j)
+int	is_it_julia (double Z_real, double Z_imag, int i, int j, complex c)
 {
 	double	temp;
 	int		max_iter;
 	int		iter;
-	double	R;
-	complex	Z;
+	// unused parameter C
 	
 	iter = 0;
 	max_iter = 1000;
-	R = sqrt(cx * cx + cy * cy);
-	while ((Z.real * Z.real) + (Z.imag * Z.imag) <= R * R && iter < max_iter)
+	while ((Z_real * Z_real) + (Z_imag * Z_imag) <= 4 && iter < max_iter)
 	{
-		temp = Z.real * Z.real - Z.imag * Z.imag;
-		Z.imag = 2 * Z.real * Z.imag + cy;
-		Z.real = temp + cx;
+		temp = Z_real * Z_real - Z_imag * Z_imag;
+		Z_imag = 2 * Z_real * Z_imag + c.imag;
+		Z_real = temp + c.real;
 		iter++;
 	}
 	if (iter == max_iter)
-		return (1);
+		return (iter);
 	else
 		color_it(iter, i, j);
 	return (0);
 }
 
-void	julia(void)
+void	julia(complex C, double x0, double y0)
 {
-	double	cx;
-	double	cy;
 	int		result;
 	int		i;
 	int		j;
@@ -132,11 +129,11 @@ void	julia(void)
 		j = 0;
 		while (j < 1080)		
 		{
-			cx = (double)i / 1080.0 * R * R - R;
-			cy = (double)j / 1080.0 * 4.0 - 2.0;
-			result = is_it_mandelbrot(x0, y0, i, j);
-			if (result == 1)
-				mlx_put_pixel(image, i, j, ft_pixel(254, 175, 160, 200));
+			x0 = (double)i / 1080.0 * 4.0 - 2.0;
+			y0 = (double)j / 1080.0 * 4.0 - 2.0;
+			result = is_it_julia(x0, -y0, i, j, C);
+			if (result != 0)
+				color_it(result, i, j);
 			j++;
 		}
 		i++;
@@ -169,12 +166,62 @@ void	mandelbrot(void)
 	}
 }
 
+int	check_sign (char c)
+{
+	if (c == '+')
+		return (1);
+	else if (c == '-')
+		return (-1);
+	else
+		return (0);
+}
+
+
+double	ft_atof(char *str)
+{
+	int		i;
+	int		j;
+	double	num;
+	double	num_dot;
+
+	i = 0;
+	j = 0;
+	num = 0.00;
+	num_dot = 0.00;
+	if (check_sign(str[i]) != 0)
+		i++;
+	while (str[i + j] != '\0')
+	{
+		if (j == 0 && str[i] != '.')
+			num = num * 10.00 + (str[i++] - '0');
+		else if (str[i + j] != '.')
+			num_dot = num_dot + (str[j + i] - '0') * pow(0.1, j);
+		if (str[i + j] == '.' || j != 0)
+			j++;
+	}
+	if (check_sign(str[0]) == -1 && (num + num_dot) != 0.00)
+		return ((num + num_dot) * -1.00);
+	return (num + num_dot);
+}
+
 void	fillimage(char set, char *str1, char *str2)
 {
-	if (set == 1)
+	complex	c;
+
+	if (!str1)
+	{
+		c.real = 0;
+		c.imag = 0;
+	}
+	else
+	{
+		c.real = ft_atof(str1);
+		c.imag = ft_atof(str2);
+	}
+	if (set == 'M')
 		mandelbrot();
 	else
-		julia();
+		julia(c, 0.00, 0.00);
 }
 
 // int zoom (double xdelta, double ydelta, void *param)
@@ -253,7 +300,9 @@ int	ft_strncmp(const char *s1, const char *s2, size_t n)
 	return (0);
 }
 
-int	create_window(int set, char *str1, char *str2)
+int	some_error(void);
+
+int	create_window(char set, char *str1, char *str2)
 {
 	mlx_t	*mlx;
 	int		error;
@@ -275,17 +324,17 @@ int	create_window(int set, char *str1, char *str2)
 		return (some_error());
 	mlx_loop_hook(mlx, ft_hook, mlx);
 	// mlx_scroll_hook(mlx, zoom, mlx);
-	mlx_loop(mlx);
 	fillimage(set, str1, str2);
+	mlx_loop(mlx);
 	mlx_terminate(mlx);
-	return(0)
+	return(0);
 }
 
 int	some_error(void)
 {
 	write(1, "Something went wrong.\n", 23);
 	write(1, "Try again?\n", 12);
-	write(1, "Valid arguments:'Mandelbrot', 'Julia (num1) (num2)", 51);
+	write(1, "Valid arguments:'Mandelbrot', 'Julia (num1) (num2)\n", 52);
 	return (1);
 }
 int	check_if_valid(char *str)
@@ -309,10 +358,26 @@ int	check_if_valid(char *str)
 		else
 			return (1);
 	}
-	if (j < 2)
+	if (j < 2 && ft_strlen(str) < 64)
 		return (0);
+	write(1, "Please be reasonable.\n", 23);
 	return (1);
 }
+
+// int	main(void)
+// {
+// 	char *str = "Mandelbrot";
+// 	int	result;
+
+// 	result = ft_strncmp(str, "Mandelbrot", 11);
+// 	if (result != 0)
+// 		result = ft_strncmp(str, "Julia", 6);
+// 	if (result == 0 && create_window(str[0], NULL, NULL) == 0)
+// 		return (0);	
+// 	else
+// 		some_error();
+// 	return(0);
+// }
 
 int main(int argc, char **argv)
 {
