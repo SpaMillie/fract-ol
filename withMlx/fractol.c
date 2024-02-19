@@ -10,45 +10,30 @@
 #include <unistd.h>
 #include <MLX42/MLX42.h>
 
-#define WIDTH 1080
-#define HEIGHT 1080
+// #define WIDTH 1080
+// #define HEIGHT 1080
 
 static mlx_image_t* image;
+static double	scale_factor;
 
 // -----------------------------------------------------------------------------
 
-typedef struct {
+typedef struct s_complex {
 	double	real;
 	double	imag;
-} complex;
+} t_complex;
+
+typedef	struct s_params {
+	double	xdelta;
+	double	ydelta;
+	double	x0;
+	double	y0;
+} t_params;
 
 int32_t ft_pixel(int32_t r, int32_t g, int32_t b, int32_t a)
 {
     return (r << 24 | g << 16 | b << 8 | a);
 }
-
-// void ft_fill(void *param, uint32_t a, uint32_t b)
-// {
-// 	(void)param;
-// 	uint32_t i = 40;
-// 	uint32_t y = 40;
-// 	a = a + i;
-// 	b = b + y;
-
-// 	while (i < a)
-// 	{
-// 		y = 40;
-// 		while (y < b)
-// 		{
-// 			uint32_t color = ft_pixel(244, 237, 50, 100);
-// 			// uint32_t color = ft_pixel(0, 0, 0, 0);
-// 			// printf ("color = %d \ni = %d\ny = %d\n", color, i, y);
-// 			mlx_put_pixel(image, i, y, color);
-// 			y++;
-// 		}
-// 		i++;
-// 	}
-// }
 
 void ft_hook(void* param)
 {
@@ -57,7 +42,7 @@ void ft_hook(void* param)
 	if (mlx_is_key_down(mlx, MLX_KEY_ESCAPE))
 		mlx_close_window(mlx);
 }
-void color_it (int	iter, int i, int j)
+void color_it_outside (int	iter, int i, int j)
 {
 	if (iter < 3)
 		mlx_put_pixel(image, i, j, ft_pixel(38, 115, 157, 200));
@@ -69,12 +54,40 @@ void color_it (int	iter, int i, int j)
 		mlx_put_pixel(image, i, j, ft_pixel(36, 17, 12, 200));
 }
 
+void color_it_inside (double iter, int i, int j)
+{
+	if (iter < 10)
+		mlx_put_pixel(image, i, j, ft_pixel(221, 97, 55, 200));
+	else if (iter < 25)
+		mlx_put_pixel(image, i, j, ft_pixel(239, 171, 104, 200));
+	else if (iter < 30)
+		mlx_put_pixel(image, i, j, ft_pixel(253, 251, 118, 200));
+	else if (iter < 50)
+		mlx_put_pixel(image, i, j, ft_pixel(227, 169, 96, 200));
+	else if (iter < 70)
+		mlx_put_pixel(image, i, j, ft_pixel(82, 148, 107, 200));
+	else if (iter < 90)
+		mlx_put_pixel(image, i, j, ft_pixel(79, 133, 154, 200));
+	else if (iter < 100)
+		mlx_put_pixel(image, i, j, ft_pixel(108, 182, 177, 200));
+	else if (iter < 200)
+		mlx_put_pixel(image, i, j, ft_pixel(255, 144, 31, 200));
+	else if (iter < 400)
+		mlx_put_pixel(image, i, j, ft_pixel(255, 41, 117, 200));
+	else if (iter < 600)
+		mlx_put_pixel(image, i, j, ft_pixel(199, 0, 181, 200));
+	else if (iter < 800)
+		mlx_put_pixel(image, i, j, ft_pixel(176, 0, 255, 200));
+	else
+		mlx_put_pixel(image, i, j, ft_pixel(0, 219, 150, 200));
+}
+
 int is_it_mandelbrot (double x0, double y0, int i, int j)
 {
-	double	temp;
-	int		max_iter;
-	int		iter;
-	complex Z;
+	double		temp;
+	int			max_iter;
+	int			iter;
+	t_complex	Z;
 	
 	Z.real = 0;
 	Z.imag = 0;
@@ -90,19 +103,19 @@ int is_it_mandelbrot (double x0, double y0, int i, int j)
 	if (iter == max_iter)
 		return (1);
 	else
-		color_it(iter, i, j);
+		color_it_outside(iter, i, j);
 	return (0);
 }
 
-int	is_it_julia (double Z_real, double Z_imag, int i, int j, complex c)
+double	is_it_julia (double Z_real, double Z_imag, int i, int j, t_complex c)
 {
 	double	temp;
 	int		max_iter;
 	int		iter;
-	// unused parameter C
+	// double	magnitude;
 	
 	iter = 0;
-	max_iter = 1001;
+	max_iter = 1000;
 	while ((Z_real * Z_real) + (Z_imag * Z_imag) <= 4 && iter < max_iter)
 	{
 		temp = Z_real * Z_real - Z_imag * Z_imag;
@@ -110,16 +123,18 @@ int	is_it_julia (double Z_real, double Z_imag, int i, int j, complex c)
 		Z_real = temp + c.real;
 		iter++;
 	}
+	// magnitude = (Z_real * Z_real) + (Z_imag * Z_imag);
 	if (iter == max_iter)
 		return (iter);
+		// return (iter + 1 - (log(magnitude)));
 	else
-		color_it(iter, i, j);
+		color_it_inside(iter, i, j);
 	return (0);
 }
 
-void	julia(complex C, double x0, double y0)
+void	julia(t_complex C, t_params *params)
 {
-	int		result;
+	double		result;
 	int		i;
 	int		j;
 
@@ -129,25 +144,23 @@ void	julia(complex C, double x0, double y0)
 		j = 0;
 		while (j < 1080)		
 		{
-			x0 = (double)i / 1080.0 * 4.0 - 2.0;
-			y0 = (double)j / 1080.0 * 4.0 - 2.0;
-			result = is_it_julia(x0, -y0, i, j, C);
+			printf("julia: %f\n", scale_factor);
+			params->x0 = ((double)i / 1080.0 * 4.0 - 2.0) * scale_factor;
+			params->y0 = ((double)j / 1080.0 * 4.0 - 2.0) * scale_factor;
+			result = is_it_julia(params->x0, -(params->y0), i, j, C);
 			if (result != 0)
-				color_it(result, i, j);
+				color_it_inside(result, i, j);
 			j++;
 		}
 		i++;
 	}
 }
 
-void	mandelbrot(void)
+void	mandelbrot(t_params *params)
 {
-	double	x0; 
-	double	y0;
 	int		result;
 	int		i;
 	int		j;
-	// double	scale_factor = zoom();
 
 	i = 0;
 	while (i < 1080)
@@ -155,9 +168,10 @@ void	mandelbrot(void)
 		j = 0;
 		while (j < 1080)		
 		{
-			x0 = (double)i / 1080.0 * 4.0 - 2.0;
-			y0 = (double)j / 1080.0 * 4.0 - 2.0;
-			result = is_it_mandelbrot(x0, y0, i, j);
+			printf("mndelbrot: %f\n", scale_factor);
+			params->x0 = ((double)i / 1080.0 * 4.0 - 2.0) * scale_factor;
+			params->y0 = ((double)j / 1080.0 * 4.0 - 2.0) * scale_factor;
+			result = is_it_mandelbrot(params->x0, params->y0, i, j);
 			if (result == 1)
 				mlx_put_pixel(image, i, j, ft_pixel(254, 175, 160, 200));
 			j++;
@@ -204,9 +218,9 @@ double	ft_atof(char *str)
 	return (num + num_dot);
 }
 
-void	fillimage(char set, char *str1, char *str2)
+void	fillimage(char set, char *str1, char *str2, t_params *params)
 {
-	complex	c;
+	t_complex	c;
 
 	if (!str1)
 	{
@@ -219,28 +233,55 @@ void	fillimage(char set, char *str1, char *str2)
 		c.imag = ft_atof(str2);
 	}
 	if (set == 'M')
-		mandelbrot();
+		mandelbrot(params);
 	else
-		julia(c, 0.00, 0.00);
+		julia(c, params);
 }
 
-// int zoom (double xdelta, double ydelta, void *param)
+// void	erase_image(void)
 // {
-// 	static double a = 40;
-// 	mlx_t *mlx = param;
-// 	ydelta *= 10;
-// 	int32_t y_ydel = (int) ydelta;
-// 	printf("%d\n", y_ydel);
-// 	ft_fillimage();
-// 	if (ydelta < 0)
-// 		a = a - 10;
-// 	else if (ydelta > 0)
-// 		a = a + 10;
-// 	return (a);
-// 	// ft_fill(mlx, a, b);
-// }
+// 	double	x0; 
+// 	double	y0;
+// 	int		i;
+// 	int		j;
 
-// -----------------------------------------------------------------------------
+// 	i = 0;
+// 	while (i < 1080)
+// 	{
+// 		j = 0;
+// 		while (j < 1080)		
+// 		{
+// 			x0 = (double)i / 1080.0 * 4.0 - 2.0;
+// 			y0 = (double)j / 1080.0 * 4.0 - 2.0;
+// 			mlx_put_pixel(image, i, j, ft_pixel(0, 0, 0, 0));
+// 			j++;
+// 		}
+// 		i++;
+// 	}
+// }	
+
+void zoom (double xdelta, double ydelta, void *param)
+{
+	t_params *params = (t_params*)param;
+	
+	ydelta *= 10;
+	// erase_image();
+	if (ydelta < 0)
+	{
+		scale_factor = scale_factor - 0.25;
+		if (scale_factor == 0)
+			scale_factor = scale_factor - 0.05;
+	}
+	else if (ydelta > 0)
+	{
+		scale_factor = scale_factor + 0.25;
+		if (scale_factor == 0)
+			scale_factor = scale_factor + 0.05;
+	}
+	printf("zoom: %f\n", scale_factor);
+	mandelbrot(params);
+}
+
 size_t	ft_strlen(const char *str)
 {
 	size_t	i;
@@ -300,9 +341,36 @@ int	ft_strncmp(const char *s1, const char *s2, size_t n)
 	return (0);
 }
 
+/*
+
+typedef struct s_params {
+	double xdelta;
+	double ydelta;
+	double scale_factor;
+} t_params
+double zoom (t_params *params)
+{
+	double 	a;
+	int		y_ydel;
+	mlx_t	*mlx;
+	
+	mlx = param;
+	ydelta *= 10;
+	a = 40;
+	y_ydel = (int) ydelta;
+	erase_image();
+	if (ydelta < 0)
+		a = a - 10;
+	else if (ydelta > 0)
+		a = a + 10;
+	return (a);
+}
+
+*/
+
 int	some_error(void);
 
-int	create_window(char set, char *str1, char *str2)
+int	create_window(char set, char *str1, char *str2, t_params *params)
 {
 	mlx_t	*mlx;
 	int		error;
@@ -323,8 +391,8 @@ int	create_window(char set, char *str1, char *str2)
 	if (error != 0)
 		return (some_error());
 	mlx_loop_hook(mlx, ft_hook, mlx);
-	// mlx_scroll_hook(mlx, zoom, mlx);
-	fillimage(set, str1, str2);
+	fillimage(set, str1, str2, params);
+	mlx_scroll_hook(mlx, zoom, params);
 	mlx_loop(mlx);
 	mlx_terminate(mlx);
 	return(0);
@@ -379,23 +447,34 @@ int	check_if_valid(char *str)
 // 	return(0);
 // }
 
+void	init_params(t_params *params)
+{
+	params->xdelta = 0;
+	params->ydelta = 0;
+	params->x0 = 0;
+	params->y0 = 0;
+}
+
 int main(int argc, char **argv)
 {
-	int		result;
+	int			result;
+	t_params	params;
 
+	scale_factor = 1;
 	if (argc == 2)
 	{
+		init_params(&params);
 		result = ft_strncmp(argv[1], "Mandelbrot", 11);
 		if (result != 0)
 			result = ft_strncmp(argv[1], "Julia", 6);
-		if (result == 0 && create_window(argv[1][0], NULL, NULL) == 0)
+		if (result == 0 && create_window(argv[1][0], NULL, NULL, &params) == 0)
 			return (0);
 	}
 	else if (argc == 4)
 	{
 		result = ft_strncmp(argv[1], "Julia", 6);
 		result += check_if_valid(argv[2]) + check_if_valid(argv[3]);
-		if (result == 0 && create_window(argv[1][0], argv[2], argv[3]) == 0)
+		if (result == 0 && create_window(argv[1][0], argv[2], argv[3], &params) == 0)
 			return (0);
 	}
 	some_error();
