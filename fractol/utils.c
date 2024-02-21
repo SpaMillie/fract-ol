@@ -6,7 +6,7 @@
 /*   By: mspasic <mspasic@student.hive.fi>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/02/19 19:49:19 by mspasic           #+#    #+#             */
-/*   Updated: 2024/02/19 19:56:04 by mspasic          ###   ########.fr       */
+/*   Updated: 2024/02/21 11:33:27 by mspasic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,7 +73,6 @@ void	zoom(double xdelta, double ydelta, void *param)
 	}
 	else if (ydelta > 0)
 		params->scale = params->scale * 1.1;
-	printf("%f\n", params->scale);
 	if (params->c == 'M')
 		mandelbrot(params);
 	else
