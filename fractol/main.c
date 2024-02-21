@@ -6,11 +6,12 @@
 /*   By: mspasic <mspasic@student.hive.fi>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/02/19 14:23:53 by mspasic           #+#    #+#             */
-/*   Updated: 2024/02/19 19:16:01 by mspasic          ###   ########.fr       */
+/*   Updated: 2024/02/21 18:50:13 by mspasic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "fractol.h"
+#include "libft.h"
 
 int	create_window(char set, char *str1, char *str2, t_params *params)
 {
