@@ -1,84 +1,125 @@
-#include <math.h>
-#include <stdio.h>
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   fractol.c                                          :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: mspasic <mspasic@student.hive.fi>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/02/19 19:56:54 by mspasic           #+#    #+#             */
+/*   Updated: 2024/02/22 18:15:57 by mspasic          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
-typedef struct {
-	double	real;
-	double	imag;
-} complex;
+#include "fractol.h"
 
-// complex	calculate_Z(double x, double y)
-// {
-// 	complex	result;
-// 	result.real = x;
-// 	result.imag = y;
-// }
-
-// int	put_pixels(int P1, int i, int j)
-// {
-// 	int	Pi;
-// 	int Pj;
-
-// 	Pi = P1 + i;
-// 	Pj = P1 + j;
-// 	// you dont need this just use i and j as pixel coordinates
-// 	// since p1 = 0
-// }
-
-int is_it_mandelbrot (double x0, double y0, complex Z);
-
-void calculate_0 (int i, int j, int width, int WIDTH, int height, int HEIGHT)
+double	is_it_julia(int i, int j, t_params *params)
 {
-	double	x0; 
-	double	y0;
+	double	temp;
 	int		iter;
-	int		result;
-	complex	Z = {0, 0};
 
+	params->y0 = -(params->y0);
 	iter = 0;
-	while (i < 512 && iter < 1000)
+	while ((params->x0 * params->x0) + (params->y0 * params->y0) <= 4 && \
+	iter < params->max_iter)
+	{
+		temp = params->x0 * params->x0 - params->y0 * params->y0;
+		params->y0 = 2 * params->x0 * params->y0 + params->r_and_i.imag;
+		params->x0 = temp + params->r_and_i.real;
+		iter++;
+	}
+	if (iter == params->max_iter)
+		return (iter);
+	else
+		color_it_inside(iter, i, j, params);
+	return (0);
+}
+
+void	julia(t_params *params)
+{
+	double		result;
+	int			i;
+	int			j;
+
+	i = 0;
+	while (i < 1080)
 	{
 		j = 0;
-		while (j < 512 && iter < 1000)		
+		while (j < 1080)
 		{
-			x0 = (double)i / (double)WIDTH * (double)width - (double)width / 2;
-			y0 = (double)j / (double)HEIGHT * (double)height - (double)height / 2;
-			result = is_it_mandelbrot(x0, y0, Z);
-			if (result == 1)
-				printf("YES!!!");
-			else
-				printf("no");
-			// printf("%f %f %d %d \n", x0, y0, i, j);
-			iter++;
+			params->x0 = ((double)i / 1080.0 * 4.0 - 2.0) * params->scale;
+			params->y0 = ((double)j / 1080.0 * 4.0 - 2.0) * params->scale;
+			result = is_it_julia(i, j, params);
+			if (result != 0)
+				color_it_inside(result, i, j, params);
 			j++;
 		}
 		i++;
 	}
 }
 
-int is_it_mandelbrot (double x0, double y0, complex Z)
+int	is_it_mandelbrot(int i, int j, t_params *params)
 {
-	double	temp;
-	double	magnitude;
-	
-	temp = Z.real;
-	Z.real = Z.real * Z.real - Z.imag * Z.imag  + x0;
-	Z.imag = 2 * temp * Z.imag + y0;
-	magnitude = Z.real * Z.real + Z.imag * Z.imag;
-	// printf("%f %f\n", Z.real, Z.imag);
-	if (fabs(magnitude) < 4) //check if it's part of the set
+	double		temp;
+	int			iter;
+	t_complex	z;
+
+	z.real = 0;
+	z.imag = 0;
+	iter = 0;
+	while ((z.real * z.real) + (z.imag * z.imag) <= 2 * 2 && \
+	iter < params->max_iter)
+	{
+		temp = z.real * z.real - z.imag * z.imag + params->x0;
+		z.imag = 2 * z.real * z.imag + params->y0;
+		z.real = temp;
+		iter++;
+	}
+	if (iter == params->max_iter)
 		return (1);
+	else
+		color_it_outside(iter, i, j, params);
 	return (0);
 }
 
-int	main(void)
+void	mandelbrot(t_params *params)
 {
-	int width = 4;
-	int	WIDTH = 512;
-	int	height = 4;
-	int	HEIGHT = 512;
-	int i = 0;
-	int j = 0;
+	int		result;
+	int		i;
+	int		j;
 
-	calculate_0 (i, j, width, WIDTH, height, HEIGHT);
+	i = 0;
+	while (i < 1080)
+	{
+		j = 0;
+		while (j < 1080)
+		{
+			params->x0 = ((double)i / 1080.0 * 4.0 - 2.0) * params->scale;
+			params->y0 = ((double)j / 1080.0 * 4.0 - 2.0) * params->scale;
+			result = is_it_mandelbrot(i, j, params);
+			if (result == 1)
+				mlx_put_pixel(params->image, i, j, \
+				ft_pixel(254, 175, 160, 200));
+			j++;
+		}
+		i++;
+	}
+}
 
+void	fillimage(char set, char *str1, char *str2, t_params *params)
+{
+	params->c = set;
+	if (!str1)
+	{
+		params->r_and_i.real = 0;
+		params->r_and_i.imag = 0;
+	}
+	else
+	{
+		params->r_and_i.real = ft_atof(str1);
+		params->r_and_i.imag = ft_atof(str2);
+	}
+	if (set == 'M')
+		mandelbrot(params);
+	else
+		julia(params);
 }
